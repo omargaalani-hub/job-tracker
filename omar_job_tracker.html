@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omar — Job Tracker</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+  .page{max-width:860px;margin:0 auto;padding:2rem 1rem 4rem}
+  h1{font-size:20px;font-weight:600;margin-bottom:4px;color:#1a1a1a}
+  .subtitle{font-size:13px;color:#888;margin-bottom:1.5rem}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+  .stat{background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:10px 12px;text-align:center}
+  .stat-num{font-size:22px;font-weight:600;color:#1a1a1a}
+  .stat-num.green{color:#1D9E75}
+  .stat-num.blue{color:#185FA5}
+  .stat-num.gray{color:#888}
+  .stat-label{font-size:11px;color:#999;margin-top:2px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+  .filter-btn{font-size:12px;padding:5px 13px;border-radius:20px;border:0.5px solid #ccc;background:#fff;color:#666;cursor:pointer;transition:all 0.15s}
+  .filter-btn.active{background:#E6F1FB;color:#0C447C;border-color:#85B7EB}
+  .filter-btn:hover{background:#f0f0ee}
+  .add-btn{margin-left:auto;font-size:12px;padding:5px 14px;border-radius:20px;border:0.5px solid #ccc;background:#fff;color:#444;cursor:pointer}
+  .add-btn:hover{background:#f0f0ee}
+  .add-form{background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;padding:14px;margin-bottom:1rem;display:none;flex-direction:column;gap:8px}
+  .add-form.visible{display:flex}
+  .add-form input,.add-form select{width:100%;font-size:13px;padding:8px 10px;border-radius:8px;border:0.5px solid #ccc;background:#fafaf8;color:#1a1a1a;outline:none}
+  .add-form input:focus,.add-form select:focus{border-color:#85B7EB}
+  .add-form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .save-btn{font-size:12px;padding:7px 16px;border-radius:8px;border:none;background:#1D9E75;color:#fff;cursor:pointer;font-weight:500}
+  .save-btn:hover{background:#0F6E56}
+  .cancel-btn{font-size:12px;padding:7px 12px;border-radius:8px;border:0.5px solid #ccc;background:#fff;color:#666;cursor:pointer}
+  .section-label{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.07em;margin:1.2rem 0 0.5rem;padding-left:2px}
+  .job-list{display:flex;flex-direction:column;gap:6px}
+  .job-row{background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:12px;transition:all 0.2s}
+  .job-row.applied{border-color:#5DCAA5;background:#f0faf6}
+  .check-wrap{padding-top:2px;flex-shrink:0}
+  .check-wrap input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#1D9E75}
+  .job-info{flex:1;min-width:0}
+  .job-title-row{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+  .job-name{font-size:13px;font-weight:500;color:#1a1a1a;line-height:1.4}
+  .job-row.applied .job-name{color:#0F6E56}
+  .market-pill{font-size:10px;padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;font-weight:500}
+  .pill-act{background:#E6F1FB;color:#0C447C}
+  .pill-au{background:#EAF3DE;color:#3B6D11}
+  .pill-intl{background:#EEEDFE;color:#3C3489}
+  .pill-usa{background:#FAECE7;color:#993C1D}
+  .applied-badge{font-size:10px;background:#E1F5EE;color:#085041;padding:2px 8px;border-radius:10px;font-weight:500}
+  .job-sub{font-size:11px;color:#999;margin-top:3px}
+  .job-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;padding-top:2px}
+  .view-link{font-size:11px;color:#185FA5;text-decoration:none}
+  .view-link:hover{text-decoration:underline}
+  .del-btn{font-size:13px;color:#bbb;cursor:pointer;background:transparent;border:none;padding:2px 5px;border-radius:4px;line-height:1}
+  .del-btn:hover{color:#E24B4A;background:#FCEBEB}
+  .empty-msg{font-size:13px;color:#aaa;padding:2rem 0;text-align:center}
+  .date-stamp{font-size:11px;color:#bbb;margin-top:0.5rem}
+  @media(max-width:500px){
+    .stats-row{grid-template-columns:repeat(2,1fr)}
+    .add-form-row{grid-template-columns:1fr}
+    .toolbar{gap:6px}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Omar Al-Ani — Job Tracker</h1>
+  <div class="subtitle" id="date-line">Loading...</div>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-num blue" id="s-total">0</div><div class="stat-label">Total roles</div></div>
+    <div class="stat"><div class="stat-num" id="s-new">0</div><div class="stat-label">To review</div></div>
+    <div class="stat"><div class="stat-num green" id="s-applied">0</div><div class="stat-label">Applied</div></div>
+    <div class="stat"><div class="stat-num gray" id="s-removed">0</div><div class="stat-label">Removed</div></div>
+  </div>
+
+  <div class="toolbar">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('act',this)">ACT Canberra</button>
+    <button class="filter-btn" onclick="setFilter('au',this)">WFH Australia</button>
+    <button class="filter-btn" onclick="setFilter('intl',this)">International</button>
+    <button class="filter-btn" onclick="setFilter('usa',this)">USA Remote</button>
+    <button class="filter-btn" onclick="setFilter('applied',this)">Applied</button>
+    <button class="add-btn" onclick="toggleForm()">+ Add role</button>
+  </div>
+
+  <div class="add-form" id="add-form">
+    <input id="f-title" placeholder="Job title — Organisation" />
+    <div class="add-form-row">
+      <select id="f-market">
+        <option value="act">ACT Canberra</option>
+        <option value="au">WFH Australia</option>
+        <option value="intl">Remote International</option>
+        <option value="usa">Remote USA</option>
+      </select>
+      <input id="f-close" placeholder="Closing date e.g. 9 Apr 2026" />
+    </div>
+    <input id="f-url" placeholder="Job listing URL (optional)" />
+    <div style="display:flex;gap:8px">
+      <button class="save-btn" onclick="addJob()">Save role</button>
+      <button class="cancel-btn" onclick="toggleForm()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="job-list" id="job-list"></div>
+</div>
+
+<script>
+const DEFAULT_JOBS = [
+  {id:'j1',market:'act',title:'Executive Group Manager — Health System Innovation & Performance',org:'ACT Health Directorate',close:'Closes soon',url:'https://au.linkedin.com/jobs/act-health-jobs',status:'new'},
+  {id:'j2',market:'act',title:'Senior Officer Grade B — Health and Community Services',org:'ACT Government – Health & Community Services',close:'Closes 9 Apr 2026',url:'https://www.jobs.act.gov.au/opportunities/all',status:'new'},
+  {id:'j3',market:'act',title:'Assistant Director — ACT Freedom of Information (EL1)',org:'ACT Independent Statutory Offices',close:'Closes 12 Apr · $121k–$132k',url:'https://www.jobs.act.gov.au/opportunities/latest',status:'new'},
+  {id:'j4',market:'act',title:'Senior Officer Grade B — Chief Minister, Treasury & Economic Development',org:'ACT Government – CMTEDD',close:'Closes 3 Apr · $149k–$167k',url:'https://www.jobs.act.gov.au/opportunities/all',status:'new'},
+  {id:'j5',market:'act',title:'Strategic comms & stakeholder engagement — APS policy priorities',org:'Federal Government (labour-hire, Canberra)',close:'',url:'https://www.seek.com.au/international-development-jobs/in-All-Canberra-ACT',status:'new'},
+  {id:'j6',market:'au',title:'Inaugural Executive Officer — Peak Maternal, Child & Family Health Nursing body',org:'National Peak Body',close:'$140k–$150k + super · 100% remote',url:'https://www.seek.com.au/ceo-not-for-profit-jobs/in-All-Sydney-NSW',status:'new'},
+  {id:'j7',market:'au',title:'CEO — National health NFP (growth, culture & revenue)',org:'National Health NFP',close:'3-year fixed term · hybrid/remote',url:'https://www.seek.com.au/ceo-nfp-jobs',status:'new'},
+  {id:'j8',market:'au',title:'Service Development & Outcomes Director — community programs',org:'Community organisation',close:'4-month contract, extendable',url:'https://www.seek.com.au/health-policy-jobs/in-All-Canberra-ACT',status:'new'},
+  {id:'j9',market:'au',title:'CEO — Lead high-impact national health charity',org:'National health charity (NFP)',close:'Remote-flexible',url:'https://www.seek.com.au/ceo-nfp-jobs',status:'new'},
+  {id:'j10',market:'intl',title:'Director of Strategic Partnerships',org:'Simprints — Ghana (remote)',close:'',url:'https://www.devex.com/jobs',status:'new'},
+  {id:'j11',market:'intl',title:'Senior Hub Manager',org:'Speak Up Africa — Kenya / Senegal (remote)',close:'',url:'https://www.devex.com/jobs',status:'new'},
+  {id:'j12',market:'intl',title:'Operations and Administration Manager',org:'International Congress for School Effectiveness — Worldwide (remote)',close:'',url:'https://www.devex.com/jobs',status:'new'},
+  {id:'j13',market:'intl',title:'Senior Director — Program Operations, Humanitarian Public Health',org:'Global health organisation (remote global)',close:'',url:'https://www.devex.com/jobs/senior-director-program-operations-humanitarian-public-health-open-to-remote-global-locations-1015351',status:'new'},
+  {id:'j14',market:'usa',title:'Senior Director — Humanitarian Advocacy',org:'CARE USA — any CARE country office incl. USA',close:'',url:'https://www.devex.com/jobs',status:'new'},
+  {id:'j15',market:'usa',title:'International Programs Manager — Health',org:'Operation Blessing — Virginia Beach VA (remote)',close:'Up to 30% travel',url:'https://www.indeed.com/q-international-relief-l-remote-jobs.html',status:'new'},
+  {id:'j16',market:'usa',title:'Browse 7,000+ Remote Senior Program Manager roles',org:'LinkedIn US — multiple NGO & health orgs',close:'Live listings',url:'https://www.linkedin.com/jobs/remote-senior-program-manager-jobs',status:'new'}
+];
+
+const PILL = {act:'pill-act',au:'pill-au',intl:'pill-intl',usa:'pill-usa'};
+const LABEL = {act:'ACT Canberra',au:'WFH Australia',intl:'International',usa:'USA Remote'};
+let filter = 'all';
+let jobs = [];
+let removedCount = 0;
+
+function loadJobs(){
+  try{
+    const saved = localStorage.getItem('omar_jobs_v2');
+    const meta = localStorage.getItem('omar_jobs_meta');
+    jobs = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_JOBS));
+    removedCount = meta ? JSON.parse(meta).removed : 0;
+  }catch(e){
+    jobs = JSON.parse(JSON.stringify(DEFAULT_JOBS));
+    removedCount = 0;
+  }
+  const now = new Date();
+  document.getElementById('date-line').textContent = 'Last updated: ' + now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  render();
+}
+
+function saveJobs(){
+  localStorage.setItem('omar_jobs_v2', JSON.stringify(jobs));
+  localStorage.setItem('omar_jobs_meta', JSON.stringify({removed:removedCount}));
+}
+
+function setFilter(f, btn){
+  filter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function toggleForm(){
+  document.getElementById('add-form').classList.toggle('visible');
+}
+
+function addJob(){
+  const title = document.getElementById('f-title').value.trim();
+  if(!title) return alert('Please enter a job title.');
+  const market = document.getElementById('f-market').value;
+  const close = document.getElementById('f-close').value.trim();
+  const url = document.getElementById('f-url').value.trim();
+  jobs.push({id:'j'+Date.now(),market,title,org:'',close,url:url||'#',status:'new'});
+  saveJobs();
+  ['f-title','f-close','f-url'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('add-form').classList.remove('visible');
+  render();
+}
+
+function toggleApply(id){
+  const j = jobs.find(j=>j.id===id);
+  if(j) j.status = j.status==='applied'?'new':'applied';
+  saveJobs();
+  render();
+}
+
+function deleteJob(id){
+  jobs = jobs.filter(j=>j.id!==id);
+  removedCount++;
+  saveJobs();
+  render();
+}
+
+function render(){
+  const total = jobs.length;
+  const applied = jobs.filter(j=>j.status==='applied').length;
+  const newJ = jobs.filter(j=>j.status==='new').length;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-applied').textContent = applied;
+  document.getElementById('s-new').textContent = newJ;
+  document.getElementById('s-removed').textContent = removedCount;
+
+  const markets = ['act','au','intl','usa'];
+  const sections = filter==='all'||filter==='applied' ? markets : [filter];
+  let html = '';
+
+  sections.forEach(m=>{
+    const rows = jobs.filter(j=>{
+      if(filter==='applied') return j.market===m && j.status==='applied';
+      if(filter==='all') return j.market===m;
+      return j.market===m;
+    });
+    if(rows.length===0) return;
+    html += `<div class="section-label">${LABEL[m]}</div>`;
+    rows.forEach(j=>{
+      const isApplied = j.status==='applied';
+      html += `<div class="job-row${isApplied?' applied':''}">
+        <div class="check-wrap"><input type="checkbox"${isApplied?' checked':''} onchange="toggleApply('${j.id}')" title="${isApplied?'Unmark':'Mark as applied'}"></div>
+        <div class="job-info">
+          <div class="job-title-row">
+            <span class="job-name">${j.title}</span>
+            <span class="market-pill ${PILL[j.market]}">${LABEL[j.market]}</span>
+            ${isApplied?'<span class="applied-badge">Applied</span>':''}
+          </div>
+          ${(j.org||j.close)?`<div class="job-sub">${[j.org,j.close].filter(Boolean).join(' · ')}</div>`:''}
+        </div>
+        <div class="job-actions">
+          ${j.url&&j.url!=='#'?`<a class="view-link" href="${j.url}" target="_blank">View</a>`:''}
+          <button class="del-btn" onclick="deleteJob('${j.id}')" title="Remove">✕</button>
+        </div>
+      </div>`;
+    });
+  });
+
+  if(!html) html = '<div class="empty-msg">No roles in this view.</div>';
+  document.getElementById('job-list').innerHTML = html;
+}
+
+loadJobs();
+</script>
+</body>
+</html>
